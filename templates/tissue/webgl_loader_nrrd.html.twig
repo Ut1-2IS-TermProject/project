@@ -123,7 +123,8 @@
 			scene.add(dirLight);
 
 			const loader = new NRRDLoader();
-			loader.load("threejs/examples/models/nrrd/Well001_LECTINE.nrrd", function (volume) {
+			//loader.load("threejs/examples/models/nrrd/Well001_LECTINE.nrrd", function (volume) {
+				loader.load("uploaded_files/image.nrrd", function (volume) {
 				//loader.load( "models/nrrd/I.nrrd", function ( volume ) {
 				//box helper to see the extend of the volume
 				tissueDim = {xL: volume.xLength, yL: volume.yLength, zL: volume.zLength};
@@ -213,7 +214,6 @@
 
 			window.addEventListener('resize', onWindowResize);
 			renderer.domElement.addEventListener('click', onClick, false);
-
 		}
 
 		function onClick() {
@@ -290,18 +290,18 @@
 				var zHigh = plane.position.z + Math.floor(planeSize / 2);
 
 				var density = 0;
-				var avgVolume = 0;
-				var avgCompactness = 0;
-				var avgElongation = 0;
+				var totalVolume = 0;
+				var totalCompactness = 0;
+				var totalElongation = 0;
 				for (var i = 0; i < cells.length; i++){
 					if (cells[i].centroidX >= xLow && cells[i].centroidX <= xHigh &&
 						cells[i].centroidY >= yLow && cells[i].centroidY <= yHigh &&
 						cells[i].centroidZ >= zLow && cells[i].centroidZ <= zHigh
 						){
 							density ++;
-							avgVolume += cells[i].volume;
-							avgCompactness += cells[i].compactness;
-							avgElongation += cells[i].elongation;
+							totalVolume += parseFloat(cells[i].volume);
+							totalCompactness += parseFloat(cells[i].compactness);
+							totalElongation += parseFloat(cells[i].elongation);
 							//console.log(cells[i]);
 							var selectedCell = scene.getObjectByName(cells[i].id);
 							//console.log(selectedCell);
@@ -317,25 +317,15 @@
 									' y: ' + realCentroid.y + ',' +
 									' z: ' + realCentroid.z + ')';
 				var info = `Density: ${density} <br> 
-							Avg Volume: ${avgVolume} <br>
-							Avg Compactness: ${avgCompactness} <br>
-							Avg Elongation: ${avgElongation}`
+							Avg Volume: ${totalVolume / density} <br>
+							Avg Compactness: ${totalCompactness / density} <br>
+							Avg Elongation: ${totalElongation / density}`
 							;					
 				tooltip.innerHTML = info;
 				tooltip.style.visibility = 'visible';
 				tooltip.style.top = event.clientY + 'px';
 				tooltip.style.left = event.clientX + 20 + 'px';
 			}
-
-		}
-
-		function onMouseMove(event) {
-
-			// calculate mouse position in normalized device coordinates
-			// (-1 to +1) for both components
-
-			mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-			mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 
 		}
 
