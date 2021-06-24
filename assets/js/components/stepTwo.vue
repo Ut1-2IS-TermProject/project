@@ -32,7 +32,6 @@
         },
         methods:{
             previewFiles(event) {
-                console.log(event.target.files);
                 if (event.target.files.length > 0){
                     var file = event.target.files[0];
                     this.fileName = file.name;
@@ -42,9 +41,10 @@
                 var inputFile = document.getElementById('dataFile');
                 var file = inputFile.files[0];
                 var data = new FormData();
-                data.append('image', file);
+                data.append('file', file);
+                data.append('file_name', 'data.csv');
                 $.ajax({
-                    url: "/file/upload",
+                    url: "/file/upload/data",
                     type: "POST",
                     data: data,
                     processData: false,

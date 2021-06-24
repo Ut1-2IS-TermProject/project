@@ -42,7 +42,7 @@
                 var file = inputFile.files[0];
                 var data = new FormData();
                 data.append('file', file);
-                data.append('file_name', 'test');
+                data.append('file_name', 'image.nrrd');
                 $.ajax({
                     url: "/file/upload",
                     type: "POST",
