@@ -5,13 +5,21 @@
 	<title>Tissue Reader</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-	<link type="text/css" rel="stylesheet" href="./threejs/examples/main.css">
+	<link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.6.0/css/font-awesome.min.css" rel="stylesheet">
+
+
+	
+	<link type="text/css" href="../styles/style.css" rel="stylesheet">
+
+	<script src='https://kit.fontawesome.com/a076d05399.js' crossorigin='anonymous'></script>
+	<script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.7.0/d3.min.js"></script>
 	<style>
 		#inset {
 			width: 150px;
 			height: 150px;
 			background-color: transparent;
-			/* or transparent; will show through only if renderer alpha: true */
+			 or transparent; will show through only if renderer alpha: true 
 			border: none;
 			/* or none; */
 			margin: 0;
@@ -21,33 +29,152 @@
 			bottom: 20px;
 			z-index: 100;
 		}
+		body {
+            /* set margin to 0 and overflow to hidden, to go fullscreen */
+            margin: 0;
+            overflow: hidden;
+            color: white;
+
+            }
+         .left {
+            height: 100%;
+            width: 700px;
+            
+            padding-right: 500px;
+            
+        }
+ 
+        .right {
+            width: 350px;
+            height: 100%;
+            background: #161717;
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            border-left: thick double #ffffff;
+        }
+        #customers {
+		  font-family: Arial, Helvetica, sans-serif;
+		  border-collapse: collapse;
+		  width: 100%;
+		}
+
+
+        #customers td, #customers th {
+          border: 1px solid #ddd;
+          padding: 8px;
+        }
+        #customers tbody {
+		    background-color: #7a7474;
+		}
+
+        #customers  tr:nth-child(even){background-color: #495357;}
+
+        #customers  tr:hover {background-color: #668496;}
+
+        #customers th {
+          padding-top: 12px;
+          padding-bottom: 12px;
+          text-align: left;
+          background-color: #161717;
+          color: white;
+        }
+        .btn {
+		  border: none;
+		  background-color: inherit;
+		  padding: 10px 15px;
+		  font-size: 16px;
+		  cursor: pointer;
+		  display: inline-block;
+		}
+		/* Green */
+		.success {
+		 
+		  color: white;
+		  position: relative;
+		  background-color: #04AA6D;
+		  left: 150px;
+		  top: 10px;
+
+		}
+
+		.success:hover {
+		  
+		  color: white;
+
+		}
+		/* Red */
+		.danger {
+			position: relative;
+		  color: white;
+		  background: #f44336;
+		  left: 50px;
+		  top: 10px;
+		}
+
+		.danger:hover {
+		  
+		  color: white;
+		}
 	</style>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 
 <body>
-	<div id="info">
-		<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> -
-		NRRD model
+	<nav class="tools">
+	    <ul id="tools">
+	        <li><a href="#" class="selected"  id="move"><i class="fas fa-arrows-alt"></i></a></li>
+	        <li><a href="#"  id="cubeBtn"><i class="fas fa-cube"></i></a></li>
+	        <li><a href="#"  id="activeBtn"><i class="fas fa-draw-polygon"></i></a></li>
+	        <li><a href="#" id="drawCir"><i class="far fa-circle"></i></a></li>       
+	    </ul>
+	</nav>
+
+	<div id="Stats-output" >
 	</div>
+	<!-- Div which will hold the Output -->
+	<div id="WebGL-output" class="left">
+	</div>
+	<div id = "data-output"  class="right">
+	    <table id = "customers">
+	        <thead>
+	        	<tr>
+				    <th>Cell</th>
+				    <th>Volume</th>
+				    <th>Compactness</th>
+				    <th>Elongation</th>
+				</tr>
+			</thead> 
+	  		<tbody></tbody>
+	    </table>
+
+	    <button class="btn danger" id = "clear">Clear</button>
+	    <button class="btn success" id = "mean">Mean</button>
+	    <!-- Show the mean value -->
+	    <p id= "showM"></p>
+
+    </div>
 	<div id="inset"></div>
 	<div id='tooltip' style='visibility: hidden; position: absolute; color: white; font-family:sans-serif'> </div>
 	<script type="module">
 
-		import * as THREE from './threejs/build/three.module.js';
+		import * as THREE from '../threejs/build/three.module.js';
 
-		import Stats from './threejs/examples/jsm/libs/stats.module.js';
+		import Stats from '../threejs/examples/jsm/libs/stats.module.js';
 
-		import { GUI } from './threejs/examples/jsm/libs/dat.gui.module.js';
-		import { TrackballControls } from './threejs/examples/jsm/controls/TrackballControls.js';
-		import { NRRDLoader } from './threejs/examples/jsm/loaders/NRRDLoader.js';
+		import { GUI } from '../threejs/examples/jsm/libs/dat.gui.module.js';
+		import { TrackballControls } from '../threejs/examples/jsm/controls/TrackballControls.js';
+		import { PLYLoader } from '../threejs/examples/jsm/loaders/PLYLoader.js';
+		import { OrbitControls } from '../threejs/examples/jsm/controls/OrbitControls.js';
+		import { Raycaster } from '../threejs/src/core/Raycaster.js'
+		
 		//import { VTKLoader } from './jsm/loaders/VTKLoader.js';
 
 		let container,
 			stats,
 			camera,
 			controls,
-			scene,
 			renderer,
 			container2,
 			renderer2,
@@ -62,13 +189,59 @@
 		var tissueDim = null;
 		var cells = [];
 
-		init();
-		animate();
 
-		function loadTissue(tissueType){
+		
+
+		
+
+		function init() {
+			//Put the polygon position into an array
+	        var polygonP = [];
+	        //Put the circle center and r into an array
+	        var circleP = [];
+
+	        var stats = initStats();
+
+	        // create a scene, that will hold all our elements such as objects, cameras and lights.
+	        var scene = new THREE.Scene();
+	        
+	        
+	        // create a camera, which defines where we're looking at.
+	        var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+	        camera.position.z = 500;
+	        // create a render and set the size
+	        var webGLRenderer = new THREE.WebGLRenderer();
+	        webGLRenderer.setClearColor(new THREE.Color(0x000000));
+	        webGLRenderer.setSize(window.innerWidth, window.innerHeight);
+	        webGLRenderer.shadowMap.enabled = false;
+   
+
+        // position and point the camera to the center of the scene
+        camera.position.set( 0, 0, 300 );
+
+        // add the output of the renderer to the html element
+        document.getElementById("WebGL-output").appendChild(webGLRenderer.domElement);
+
+			
+		// light
+
+		const hemiLight = new THREE.HemisphereLight(0xffffff, 0x000000, 1);
+		scene.add(hemiLight);
+
+		const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+		dirLight.position.set(200, 200, 200);
+		scene.add(dirLight);
+
+		//Orbit rotate
+        var orbit = new OrbitControls(camera,webGLRenderer.domElement);
+        //set rotate pivot point
+        orbit.target.set( 320, 240, 0 );
+        orbit.update();
+
+        function loadTissue(){
 			$.ajax({
                     //url: `/tissue/get/${tissueType}`,
-					url: `/tissue/get/all`,
+					url: `http://localhost:8080/project-master-1/public/index.php/tissue/get/all`,
                     type: "GET",
                     //data: JSON.stringify(data),
                     processData: false,
@@ -89,13 +262,13 @@
 							cells[i].centroidX = cells[i].centroidX - Math.floor(tissueDim.xL / 2);
 							cells[i].centroidY = cells[i].centroidY - Math.floor(tissueDim.yL / 2);
 							cells[i].centroidZ = cells[i].centroidZ - Math.floor(tissueDim.zL / 2);
-
-							cell.position.x = cells[i].centroidX;
-							cell.position.y = cells[i].centroidY;
-							cell.position.z = cells[i].centroidZ;
-							cell.name = cells[i].id;
-							cell.userData = cell[i];
-							scene.add(cell);
+							// console.log(cells[i].centroidX);
+							// cell.position.x = cells[i].centroidX;
+							// cell.position.y = cells[i].centroidY;
+							// cell.position.z = cells[i].centroidZ;
+							// cell.name = cells[i].id;
+							// cell.userData = cell[i];
+							// scene.add(cell);
 						}
                     }),
                     error:function(response){
@@ -104,241 +277,793 @@
                 });
 		};
 
-		function init() {
+        //tool bar: click it and draw polygons
+        function toolBar(){
 
-			camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.01, 1e10);
-			camera.position.z = 500;
+            document.getElementById( 'cubeBtn' ).addEventListener( 'click', cubeMode, false );
+            document.getElementById( 'drawCir' ).addEventListener( 'click', cirMode, false );
+            document.getElementById( 'move' ).addEventListener( 'click', moveMode, false );
+            document.getElementById( 'activeBtn' ).addEventListener( 'click', labelMode, false );
+            document.getElementById( 'clear' ).addEventListener( 'click', clearTable, false );
+            document.getElementById( 'mean' ).addEventListener( 'click', meanCal, false );
+        }
 
-			scene = new THREE.Scene();
 
-			scene.add(camera);
+        //general click event 
+        
+        function labelMode( event ) {
+            event.preventDefault();
+            orbit.enabled = false;
 
-			// light
+            document.getElementById( 'activeBtn' ).className = "selected";
+            document.getElementById( 'move' ).className = "";
+            document.getElementById( 'drawCir' ).className = "";
+            document.getElementById('cubeBtn').className="";
 
-			const hemiLight = new THREE.HemisphereLight(0xffffff, 0x000000, 1);
-			scene.add(hemiLight);
+            document.removeEventListener('mousedown', onClickHandle, false);
+                        webGLRenderer.domElement.removeEventListener('mousemove', onMouseMove, false);
 
-			const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-			dirLight.position.set(200, 200, 200);
-			scene.add(dirLight);
+            webGLRenderer.domElement.removeEventListener('click', onClick, false);
+            document.removeEventListener('mousemove', onMouseMove, false);
+            document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+        }
+        function moveMode( event ) {
+            event.preventDefault();
+            orbit.enabled = true;
+            document.removeEventListener('mousedown', onDocumentMouseDown, false);
+            
+            document.removeEventListener('mousedown', onClickHandle, false);
+            webGLRenderer.domElement.removeEventListener('click', onClick, false);
+            
+            onDocumentMouseDown.enabled=false;
+            document.getElementById( 'activeBtn' ).className = "";
+            document.getElementById( 'drawCir' ).className = "";
+            document.getElementById('cubeBtn').className="";
+            document.getElementById( 'move' ).className = "selected";
+        }
 
-			const loader = new NRRDLoader();
-			//loader.load("threejs/examples/models/nrrd/Well001_LECTINE.nrrd", function (volume) {
-				loader.load("uploaded_files/image.nrrd", function (volume) {
-				//loader.load( "models/nrrd/I.nrrd", function ( volume ) {
-				//box helper to see the extend of the volume
-				tissueDim = {xL: volume.xLength, yL: volume.yLength, zL: volume.zLength};
-				const geometry = new THREE.BoxGeometry(volume.xLength, volume.yLength, volume.zLength);
-				const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-				const cube = new THREE.Mesh(geometry, material);
-				cube.visible = false;
-				const box = new THREE.BoxHelper(cube);
-				box.name = 'tissue';
-				scene.add(box);
-				box.applyMatrix4(volume.matrix);
-				scene.add(cube);
+        function cirMode(event){
+            event.preventDefault();
+            orbit.enabled = false;
+            document.getElementById( 'activeBtn' ).className = "";
+            document.getElementById( 'move' ).className = "";
+            document.getElementById('cubeBtn').className="";
+            document.getElementById( 'drawCir' ).className = "selected";
 
-				loadTissue("lectine");
+            document.removeEventListener('mousemove', onMouseMove, false);
+            webGLRenderer.domElement.removeEventListener('click', onClick, false);
+            webGLRenderer.domElement.removeEventListener('mousemove', onMouseMove, false);
+            document.removeEventListener('mousedown', onDocumentMouseDown, false);
+            document.removeEventListener('mousedown', onClickHandle, false);
+            document.addEventListener('mousedown', onClickHandle, false);
+        }
 
-				//z plane
-				const sliceZ = volume.extractSlice('z', Math.floor(volume.RASDimensions[2] / 4));
-				scene.add(sliceZ.mesh);
-				currentIndexZ = Math.floor(volume.RASDimensions[2] / 4);
+        function cubeMode(event){
+        	event.preventDefault();
+        	orbit.enabled = true;
+        	document.getElementById( 'activeBtn' ).className = "";
+            document.getElementById( 'move' ).className = "";
+            document.getElementById( 'drawCir' ).className = "";
+            document.getElementById('cubeBtn').className="selected";
 
-				//y plane
-				const sliceY = volume.extractSlice('y', Math.floor(volume.RASDimensions[1] / 2));
-				scene.add(sliceY.mesh);
 
-				//x plane
-				const sliceX = volume.extractSlice('x', Math.floor(volume.RASDimensions[0] / 2));
-				scene.add(sliceX.mesh);
+            webGLRenderer.domElement.addEventListener('mousemove', onMouseMove, false);
+		
+            webGLRenderer.domElement.addEventListener('click', onClick, false);
 
-				gui.add(sliceX, "index", 0, volume.RASDimensions[0], 1).name("indexX").onChange(function () {
+        	document.addEventListener('mousemove', onMouseMove, false);
+            document.removeEventListener('mousedown', onDocumentMouseDown, false);
+            document.removeEventListener('mousedown', onClickHandle, false);
+            
+            document.removeEventListener('mousedown', onClickHandle, false);
 
-					sliceX.repaint.call(sliceX);
 
-				});
-				gui.add(sliceY, "index", 0, volume.RASDimensions[1], 1).name("indexY").onChange(function () {
+        }
+        // Clear Table
+      function clearTable(event){
+        $("#customers tbody").empty();
+        $("p").empty();
+        document.getElementById( 'activeBtn' ).className = "";
+            document.getElementById( 'move' ).className = "";
+            document.getElementById( 'drawCir' ).className = "";
+            document.removeEventListener('mousedown', onDocumentMouseDown, false);
+            document.removeEventListener('mousedown', onClickHandle, false);
 
-					sliceY.repaint.call(sliceY);
+      }
 
-				});
-				gui.add(sliceZ, "index", 0, volume.RASDimensions[2], 1).name("indexZ").onChange(function (value) {
-					currentIndexZ = value;
-					sliceZ.repaint.call(sliceZ);
-				});
+      // Mean Calculate
+      function meanCal(event){
+        document.getElementById( 'activeBtn' ).className = "";
+            document.getElementById( 'move' ).className = "";
+            document.getElementById( 'drawCir' ).className = "";
+            document.removeEventListener('mousedown', onDocumentMouseDown, false);
+            document.removeEventListener('mousedown', onClickHandle, false);
+            var V = d3.mean(storeVol);
+            var C = d3.mean(storeCompact);
+            var E = d3.mean(storeElong);
+            console.log(V);
+            document.getElementsByTagName("p")[0].innerHTML="MeanVolume: "+V
+            					+"<br/>"+"MeanCompactnes: "+C
+            					+"<br/>"+"MeanElongation: "+E;;
 
-				gui.add(volume, "lowerThreshold", volume.min, volume.max, 1).name("Lower Threshold").onChange(function () {
 
-					volume.repaintAllSlices();
 
-				});
-				gui.add(volume, "upperThreshold", volume.min, volume.max, 1).name("Upper Threshold").onChange(function () {
+      }
+        // add click event
+        
+        var dots = []
+        function onDocumentMouseDown (event) {
 
-					volume.repaintAllSlices();
+            console.log("Click.");
+            var raycaster = new THREE.Raycaster(); // create once
+            var mouse = new THREE.Vector2(); // create once
+            mouse.x = ( event.clientX / webGLRenderer.domElement.clientWidth ) * 2 - 1;
+            mouse.y = - ( event.clientY / webGLRenderer.domElement.clientHeight ) * 2 + 1;
 
-				});
-				gui.add(volume, "windowLow", volume.min, volume.max, 1).name("Window Low").onChange(function () {
+            if (event.button === 0) {
+            raycaster.setFromCamera( mouse, camera );
 
-					volume.repaintAllSlices();
+            var intersects = raycaster.intersectObjects( scene.children, true );
+            // console.log(scene.children[2]);
+           if (intersects.length>0 &&  intersects[0].object.name == 'Loader') {
+                var selected=intersects [0];// take the first object
+                var x = selected.point.x;
+                var y = selected.point.y;
+                var z = selected.point.z;
+                // console.log(intersects [0]);
+                // console.log ("x coordinate:" + selected.point.x);
+                // console.log ("y coordinate:" + selected.point.y);
+                // console.log ("z coordinate:" + selected.point.z);
+                
+              };
+              if(intersects.length>0 && intersects[0] && intersects[0].object.name == 'plane1') {
+                var selected=intersects [0];// take the first object
+                var x = selected.point.x;
+                var y = selected.point.y;
+                var z = selected.point.z -50 ;
+                
+                
+              };
+            // Display clicked points           
+            drawPoints(x,y,z);
+           
+            //Draw Polygon
+            dots.push( new THREE.Vector3(x,y,z));
+            drawPolyFence();
+        }
+        if (event.button === 2) {
 
-				});
-				gui.add(volume, "windowHigh", volume.min, volume.max, 1).name("Window High").onChange(function () {
+            if (scene.getObjectByName('line_move')) {
+                
+                scene.remove(scene.getObjectByName('mesh_move'));
+                scene.remove(scene.getObjectByName('line_move'));
+                scene.remove(scene.getObjectByName('pointsField'));
+                dots.shift();
 
-					volume.repaintAllSlices();
 
-				});
-			});
+            }
 
-			renderer = new THREE.WebGLRenderer();
-			renderer.setPixelRatio(window.devicePixelRatio);
-			renderer.setSize(window.innerWidth, window.innerHeight);
+        }
 
-			container = document.createElement('div');
-			document.body.appendChild(container);
-			container.appendChild(renderer.domElement);
+      }
+      render();
+      
+      //keyboard ESC: cancel action
+    function onKeyDown(event) {
+ 
+        if (event.key === 'Escape'){
+            // esc point: 
+            if(scene.getObjectByName('pointsField')){
+                scene.remove(scene.getObjectByName('pointsField'));
+                dots.shift();
+            }
+            if(scene.getObjectByName('mesh_move')){
+                scene.remove(scene.getObjectByName('mesh_move'));
+                scene.remove(scene.getObjectByName('line_move'));
+                scene.remove(scene.getObjectByName('pointsField'));
+                dots.shift();
+            }
+            if (scene.getObjectByName('line_move')) {
+ 
+                scene.remove(scene.getObjectByName('line_move'));
+                dots.shift();
+ 
+            }
+            if (scene.getObjectByName('plane1')) {
+ 
+                scene.remove(scene.getObjectByName('plane1'));
+                dots.shift();
+ 
+            }
+        }
+    }
+ 
+        // Display clicked points
+        function drawPoints(x,y,z){
+            var pointsGeometry = new THREE.BufferGeometry();
+            pointsGeometry.setAttribute( 'position', new THREE.Float32BufferAttribute( new THREE.Vector3(x,y,z).toArray(), 3 ) );
+            var pointMaterial = new THREE.PointsMaterial({color: 0xffa500, size: 8});
+            var pointsField = new THREE.Points(pointsGeometry, pointMaterial);
+            pointsField.name = 'pointsField';
 
-			controls = new TrackballControls(camera, renderer.domElement);
-			controls.minDistance = 100;
-			controls.maxDistance = 500;
-			controls.rotateSpeed = 5.0;
-			controls.zoomSpeed = 5;
-			controls.panSpeed = 2;
+            scene.add(pointsField);
+            
+            // console.log(scene);
+        }
 
-			stats = new Stats();
-			container.appendChild(stats.dom);
+        // Draw Ploygon
+        function drawPolyFence(){           
+            console.log(dots[0])
+            if (dots.length>1) {
+                var x_dis = dots[dots.length-2].x-dots[dots.length-1].x;
+                var y_dis = dots[dots.length-2].y-dots[dots.length-1].y;
+                var dis = Math.sqrt(x_dis*x_dis+y_dis*y_dis);
+                if (dis <10){
+                    var tem = [];
+                  
+                    drawLine(dots[dots.length-2],dots[dots.length-1]);
+                    var shape = new THREE.Shape(conv2Vector3(dots));
+                    shape.moveTo(dots[0].x, dots[0].y,dots[0].z);
+                    shape.autoClose = true;
+                    //get the area with the side points
+                    let pointsshape = shape.getPoints();
+                    
+                    console.log(pointsshape);
+                    for(var j = 0;j<pointsshape.length;j++){
+                        tem.length=0;
+                        var p_x = pointsshape[j].x; 
+                        var p_y = pointsshape[j].y; 
+                        tem.push(p_x,p_y);
+                        polygonP.push(tem);
+                        
+                };
+                    console.log(tem);
+                    console.log(polygonP);
 
-			//const gui = new GUI();
+                    
+                    check_in_polygon(polygonP);
 
+                    var geometry = new THREE.ShapeGeometry(shape, 25);
+                    var material = new THREE.MeshBasicMaterial( { color: 0xD8D4EA} );
+                    var mesh = new THREE.Mesh( geometry, material ) ;
+                    mesh.name = 'mesh_move';
+                    scene.add( mesh );
+                    
+                    //draw multiple polygon
+                    dots.length=0;
+                    // console.log(shape);
+                }else{
+                drawLine(dots[dots.length-2],dots[dots.length-1]);
+                }   
+            }   
+        }   
+        
+                   
+      function drawLine(vertice1,vertice2){
+ 
+            var material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+            var vertices = [];
+            vertices.push( new THREE.Vector3(vertice1.x,vertice1.y) );
+            vertices.push( new THREE.Vector3(vertice2.x,vertice2.y) );
+            console.log(vertices);
+            var geometry = new THREE.BufferGeometry().setFromPoints( vertices );
+            var line = new THREE.Line( geometry, material );
+            line.name = 'line_move';
+            scene.add(line)
+         
+        }
+
+        function conv2Vector3(dots){
+            var temp = [];
+            for (var i = 0; i < dots.length; i++) {
+                if (i == dots.length-1) {
+                    temp.push(new THREE.Vector3(dots[0].x,dots[0].y,dots[0].z));
+                }else{
+                    temp.push(new THREE.Vector3(dots[i].x,dots[i].y,dots[i].z));
+                }
+            }
+            return temp;
+        }
+
+        
+        // Draw circle:       
+
+        var pointArr = [];
+
+        // get the center coordinates
+        function onClickHandle(event) {
+            console.log("Draw Circle.");
+            
+            var raycaster = new THREE.Raycaster(); // create once
+            var mouse = new THREE.Vector2(); // create once
+            mouse.x = ( event.clientX / webGLRenderer.domElement.clientWidth ) * 2 - 1;
+            mouse.y = - ( event.clientY / webGLRenderer.domElement.clientHeight ) * 2 + 1;
+
+            if (event.button === 0) {
+            raycaster.setFromCamera( mouse, camera );
+
+            var intersects = raycaster.intersectObjects( scene.children, true );
+           console.log(intersects);
+            if (intersects.length>0 && intersects[0] && intersects[0].object.name == 'Loader') {
+                var selected=intersects [0];// take the first object
+                var x = selected.point.x;
+                var y = selected.point.y;
+                var z = selected.point.z;
+                // console.log(intersects [0]);
+                // console.log ("x coordinate:" + selected.point.x);
+                // console.log ("y coordinate:" + selected.point.y);
+                // console.log ("z coordinate:" + selected.point.z);
+                
+              }
+              if(intersects.length>0 && intersects[0] && intersects[0].object.name == 'plane1') {
+                var selected=intersects [0];// take the first object
+                var x = selected.point.x;
+                var y = selected.point.y;
+                var z = selected.point.z - 50;
+                
+                
+              }
+
+               
+               // console.log(realX,realY,realZ);
+            // Display clicked points           
+            drawPoints(x,y,z);
+            console.log('Circle center:');
+            console.log(selected.point);
+            //Draw Polygon
+            pointArr.push( new THREE.Vector3(x,y,z));
+
+            
+            processDraw();
+            
+            
+            // draw multiple circle
+            if (pointArr.length>1){
+                pointArr.length=0;
+            } 
+                
+            } 
+        }
+
+
+        
+        // draw circle process
+        function processDraw() {
+            let fristPoint = pointArr[0];
+            // console.log(fristPoint);
+            let lastPoint = pointArr[pointArr.length-1];
+            let distance = fristPoint.distanceTo(lastPoint);
+            // console.log(distance);
+            if(distance !=0){
+                generateCircle(distance, fristPoint);
+            }
+            
+            
+        }
+        // Generate Circle
+        function generateCircle(distance, center) {
+            // console.log('mesh circle');
+            var c = [];
+            var wholeP = [];
+
+            let circleGeometry = new THREE.CircleGeometry(distance, 32);
+            let material = new THREE.MeshBasicMaterial({
+                color: 0xffff00,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.5
+            });
+            let circle = new THREE.Mesh(circleGeometry, material);
+            circle.name = 'mesh_move';
+            // set circle coordinates
+            circle.position.x = center.x;
+            circle.position.y = center.y;
+            circle.position.z = center.z;
+            c.push(circle.position);
+            console.log(c);
+            for(var h = 0;h<c.length;h++){
+                        wholeP.length=0;
+                        var p_x = c[h].x; 
+                        var p_y = c[h].y; 
+                        wholeP.push(p_x,p_y);
+                               
+                };
+            check_in_circle(distance,wholeP)
+            
+            console.log(wholeP);
+            console.log('Distance:'+ distance);
+            scene.add(circle);
+            
+        }
+
+        	
+			const loader = new PLYLoader();
+        loader.load('../uploaded_files/test4.ply',function (geometry) {
+                geometry.computeVertexNormals();
+
+                var mesh = new THREE.Mesh(geometry)
+                var points = new THREE.Points(geometry);
+                points.name = 'Loader';
+                            
+                scene.add(points);
+                
+    
+                //volume!!!!
+                var volume = points.geometry.boundingSphere.center;
+                // console.log(volume);
+                tissueDim = {xL: volume.x, yL: volume.y, zL: volume.z};
+                // console.log(volume.x);
+
+
+                loadTissue();
+
+				
+
+
+                
+            },
+            (xhr) => {
+                console.log((xhr.loaded / xhr.total * 100) + '% loaded')
+            },
+            (error) => {
+                console.log(error);
+            });
+
+
+        // When the mouse moves, call the given function
+		
+        
+			// add click tiptool
+        function onMouseMove(event) {
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            // console.log(mouse);
+            var currentIndexZ = 0;
+
+            event.preventDefault();
+            // remove previous plane
+            var previousPlane = scene.getObjectByName("plane");
+            if (previousPlane != null){
+                scene.remove(previousPlane);
+            }
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            var intersects = raycaster.intersectObjects(scene.children, true);
+            // console.log(intersects);
+
+            if (intersects.length > 0) {
+                
+                // calculate real coordinates in the object
+                //var tissue = scene.getObjectByName("tissue");
+                var relativeCentroid = {x: 0, y: 0, z: 0};
+                var realCentroid = {x: 0, y: 0, z: 0};
+                relativeCentroid.x = Math.floor(tissueDim.xL / 2) + Math.floor(intersects[0].point.x);
+                relativeCentroid.y = Math.floor(tissueDim.yL / 2) + Math.floor(intersects[0].point.y);
+                relativeCentroid.z = currentIndexZ - Math.floor(tissueDim.zL / 2);
+                realCentroid = Object.assign({}, relativeCentroid);
+                realCentroid.z = currentIndexZ;
+                var planeSize = 100;
+                var data = {
+                    centroid: realCentroid,
+                    size: planeSize
+                };
+                
+                var geometryPlane = new THREE.BoxBufferGeometry( planeSize, planeSize, planeSize); 
+                var materialPlane = new THREE.MeshBasicMaterial( { color: 0x48C9B0, wireframe: true } ); 
+                var plane = new THREE.Mesh( geometryPlane, materialPlane );
+                
+                plane.position.x = intersects[0].point.x;
+                plane.position.y = intersects[0].point.y;
+                plane.position.z = realCentroid.z;
+                plane.name = 'plane';
+                scene.add(plane);
+
+                // search objects inside this plane
+                var xLow = plane.position.x - Math.floor(planeSize / 2);
+                var yLow = plane.position.y - Math.floor(planeSize / 2);
+                var zLow = plane.position.z - Math.floor(planeSize / 2);
+                var xHigh = plane.position.x + Math.floor(planeSize / 2);
+                var yHigh = plane.position.y + Math.floor(planeSize / 2);
+                var zHigh = plane.position.z + Math.floor(planeSize / 2);
+               
+					
+                // console.log(xLow,xHigh);
+                var density = 0;
+                var avgVolume = 0;
+                var avgCompactness = 0;
+                var avgElongation = 0;
+                for (var i = 0; i < cells.length; i++){
+                    if (cells[i].centroidX >= xLow && cells[i].centroidX <= xHigh &&
+                        cells[i].centroidY >= yLow && cells[i].centroidY <= yHigh //&&
+                        // cells[i].centroidZ >= zLow && cells[i].centroidZ <= zHigh
+                        ){
+                    		
+                            density ++;
+                            avgVolume += Number(cells[i].volume);
+                            // console.log(avgVolume);
+                            avgCompactness += Number(cells[i].compactness);
+                            avgElongation += Number(cells[i].elongation);
+                            //console.log(cells[i]);
+                            var selectedCell = scene.getObjectByName(cells[i].id);
+                            
+                        }
+                }
+                
+                // display selected coordinates
+                var coordinates = '(x: ' + realCentroid.x + ',' +
+                                    ' y: ' + realCentroid.y + ',' +
+                                    ' z: ' + realCentroid.z + ')';
+                avgVolume = avgVolume/density;
+                avgCompactness = avgCompactness/density;
+                avgElongation = avgElongation/density;
+                
+                var info = `Density: ${density} <br> 
+                            Avg Volume: ${avgVolume} <br>
+                            Avg Compactness: ${avgCompactness} <br>
+                            Avg Elongation: ${avgElongation}`
+                            ;                   
+                tooltip.innerHTML = info;
+                tooltip.style.visibility = 'visible';
+                tooltip.style.top = event.clientY + 'px';
+                tooltip.style.left = event.clientX + 20 + 'px';
+                
+
+            }
+
+        }
+        function generateGeometry() {
+
+						updateGroupGeometry( mesh,
+							new BoxGeometry(
+								planeSize
+							)
+						);
+
+					}
+        function onClick(event){
+
+            if(event.button == 0){
+	            const raycaster = new THREE.Raycaster();
+	            const mouse = new THREE.Vector2();
+	            console.log('success');
+	            // console.log(mouse);
+	            var currentIndexZ = 0;
+
+	            event.preventDefault();
+	            
+
+	            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+	            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+	            // console.log(mouse);
+
+	            raycaster.setFromCamera(mouse, camera);
+	            	// console.log(scene.children);
+	            	var intersects = raycaster.intersectObjects(scene.children, true);
+	            	// console.log(intersects);
+
+	            if (intersects.length > 0) {
+	                
+	                // calculate real coordinates in the object
+	                //var tissue = scene.getObjectByName("tissue");
+	                var relativeCentroid = {x: 0, y: 0, z: 0};
+	                var realCentroid = {x: 0, y: 0, z: 0};
+	                relativeCentroid.x = Math.floor(tissueDim.xL / 2) + Math.floor(intersects[0].point.x);
+	                relativeCentroid.y = Math.floor(tissueDim.yL / 2) + Math.floor(intersects[0].point.y);
+	                relativeCentroid.z = currentIndexZ - Math.floor(tissueDim.zL / 2);
+	                realCentroid = Object.assign({}, relativeCentroid);
+	                realCentroid.z = currentIndexZ;
+	                var planeSize = 100;
+	                var data = {
+	                    centroid: realCentroid,
+	                    size: planeSize
+	                };
+	                
+	                var geometryPlane = new THREE.BoxBufferGeometry( planeSize, planeSize, planeSize); 
+	                var materialPlane = new THREE.MeshBasicMaterial( { color: 0x48C9B0, wireframe: true } ); 
+	                var plane1 = new THREE.Mesh( geometryPlane, materialPlane );
+	                
+	                plane1.position.x = intersects[0].point.x;
+	                plane1.position.y = intersects[0].point.y;
+	                plane1.position.z = realCentroid.z;
+	                plane1.name = 'plane1';
+	                scene.add(plane1);
+
+	                // search objects inside this plane
+	                var xLow = plane1.position.x - Math.floor(planeSize / 2);
+	                var yLow = plane1.position.y - Math.floor(planeSize / 2);
+	                var zLow = plane1.position.z - Math.floor(planeSize / 2);
+	                var xHigh = plane1.position.x + Math.floor(planeSize / 2);
+	                var yHigh = plane1.position.y + Math.floor(planeSize / 2);
+	                var zHigh = plane1.position.z + Math.floor(planeSize / 2);
+	                // console.log(xLow,xHigh);
+	                var density = 0;
+	                var avgVolume = 0;
+	                var avgCompactness = 0;
+	                var avgElongation = 0;
+	                for (var i = 0; i < cells.length; i++){
+	                    if (cells[i].centroidX >= xLow && cells[i].centroidX <= xHigh &&
+	                        cells[i].centroidY >= yLow && cells[i].centroidY <= yHigh //&&
+	                        // cells[i].centroidZ >= zLow && cells[i].centroidZ <= zHigh
+	                        ){
+	                    		
+	                            density ++;
+	                            avgVolume += Number(cells[i].volume);
+	                            // console.log(avgVolume);
+	                            avgCompactness += Number(cells[i].compactness);
+	                            avgElongation += Number(cells[i].elongation);
+	                            //console.log(cells[i]);
+	                            var selectedCell = scene.getObjectByName(cells[i].id);
+	                            
+	                        }
+	                }
+	                
+	                // display selected coordinates
+	                var coordinates = '(x: ' + realCentroid.x + ',' +
+	                                    ' y: ' + realCentroid.y + ',' +
+	                                    ' z: ' + realCentroid.z + ')';
+	                avgVolume = avgVolume/density;
+	                avgCompactness = avgCompactness/density;
+	                avgElongation = avgElongation/density;
+	                
+	                var info = `Density: ${density} <br> 
+	                            Avg Volume: ${avgVolume} <br>
+	                            Avg Compactness: ${avgCompactness} <br>
+	                            Avg Elongation: ${avgElongation}`
+	                            ;                   
+	                tooltip.innerHTML = info;
+	                tooltip.style.visibility = 'visible';
+	                tooltip.style.top = event.clientY + 'px';
+	                tooltip.style.left = event.clientX + 20 + 'px';
+	                
+
+	            }
+            }
+            if(event.button == 1){
+            	scene.remove(scene.getObjectByName('plane1'));
+            	$("tooltip").empty();
+            }
+            
+
+        }
+
+      
+        // Load csv file and match the data
+        var storeVol = [];
+        var storeCompact = [];
+        var storeElong = [];
+
+        
+        function check_in_polygon(dots){
+            var storeinfo = [];
+            var info = document.getElementById('customers');
+           
+
+              cells.forEach(function(d) {
+                var x = d.centroidX; 
+                var y = d.centroidY; 
+                // console.log( "x: " + x + "\n" + 
+                //     "y: " + y );
+               
+
+                var tem = [x,y];
+                var testPoint = tem.map(Number);
+                // console.log(testPoint);
+                if (d3.polygonContains(dots, testPoint)){
+                    var tr = document.createElement('tr');
+                    var tbody = document.createElement('tbody');
+                    
+                    let text = [d.cellClass,d.volume,d.compactness,d.elongation];
+                    var temVstr = [];
+                    var temCstr = [];
+                    var temEstr = [];
+
+                    temVstr.push(d.volume);
+                    temCstr.push(d.compactness);
+                    temEstr.push(d.elongation);
+
+                    var testVStor = temVstr.map(Number);
+                    var testCStor = temCstr.map(Number);
+                    var testEStor = temEstr.map(Number);
+
+                    testVStor.forEach(element => storeVol.push(element));
+                    testCStor.forEach(element => storeCompact.push(element));
+                    testEStor.forEach(element => storeElong.push(element));
+                    // storeVol.push(temstr.map(Number));
+                    console.log(storeVol);
+                    console.log(storeCompact);
+                    console.log(storeElong);
+                    for(let i =0;i<text.length;i++){
+                        var td = document.createElement('td');
+                        td.appendChild(document.createTextNode(text[i]));
+                        tr.appendChild(td);
+                    }
+                    tbody.appendChild(tr);
+                    info.appendChild(tbody);
+           
+            };
+        });
+   
+    };
+            
+            function check_in_circle(r,center){
+                var storeinfo = [];
+                var info = document.getElementById('customers');
+                
+            
+              cells.forEach(function(d) {
+              	// console.log(d);
+
+                var px = d.centroidX; 
+                var py = d.centroidY; 
+                // console.log( "x: " + px + "\n" + 
+                //     "y: " + py ); 
+                var cx = center[0];
+                var cy = center[1];
+                if (inside_circle(px,py,cx,cy,r)){
+                    var tr = document.createElement('tr');
+                    var tbody = document.createElement('tbody');
+                    
+                    let text = [d.cellClass,d.volume,d.compactness,d.elongation];
+
+                    var temVstr = [];
+                    var temCstr = [];
+                    var temEstr = [];
+
+                    temVstr.push(d.volume);
+                    temCstr.push(d.compactness);
+                    temEstr.push(d.elongation);
+
+                    var testVStor = temVstr.map(Number);
+                    var testCStor = temCstr.map(Number);
+                    var testEStor = temEstr.map(Number);
+
+                    testVStor.forEach(element => storeVol.push(element));
+                    testCStor.forEach(element => storeCompact.push(element));
+                    testEStor.forEach(element => storeElong.push(element));
+                    // storeVol.push(temstr.map(Number));
+                    console.log(storeVol);
+                    console.log(storeCompact);
+                    console.log(storeElong);
+                    for(let i =0;i<text.length;i++){
+                        var td = document.createElement('td');
+                        td.appendChild(document.createTextNode(text[i]));
+                        tr.appendChild(td);
+                    }
+                    tbody.appendChild(tr);
+                    info.appendChild(tbody);
+                    
+                    }  
+                });
+              
+        
+        };
+        // whether point inside a circle
+        function inside_circle(px,py,cx,cy,r){
+            if ((px - cx) * (px - cx) +(py - cy) * (py - cy) <= r * r){
+                return true;
+            }
+        };
+            
+        
+         
+      		window.addEventListener('keydown', onKeyDown, false);
+
+	
 			setupInset();
 
-			window.addEventListener('resize', onWindowResize);
-			renderer.domElement.addEventListener('click', onClick, false);
-		}
+			
+			
 
-		function onClick() {
+		
 
-			event.preventDefault();
-			// remove previous plane
-			var previousPlane = scene.getObjectByName("plane");
-			if (previousPlane != null){
-				scene.remove(previousPlane);
-			}
-			mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-			mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+		
 
-			raycaster.setFromCamera(mouse, camera);
+		
 
-			var intersects = raycaster.intersectObjects(scene.children, true);
-
-			if (intersects.length > 0) {
-				
-				// calculate real coordinates in the object
-				//var tissue = scene.getObjectByName("tissue");
-				var relativeCentroid = {x: 0, y: 0, z: 0};
-				var realCentroid = {x: 0, y: 0, z: 0};
-				relativeCentroid.x = Math.floor(tissueDim.xL / 2) + Math.floor(intersects[0].point.x);
-				relativeCentroid.y = Math.floor(tissueDim.yL / 2) + Math.floor(intersects[0].point.y);
-				relativeCentroid.z = currentIndexZ - Math.floor(tissueDim.zL / 2);
-				realCentroid = Object.assign({}, relativeCentroid);
-				realCentroid.z = currentIndexZ;
-				var planeSize = 100;
-				var data = {
-					centroid: realCentroid,
-					size: planeSize
-				};
-				// console.log(centroid);
-				/*
-				$.ajax({
-                    url: "/tissue/get/statistics",
-                    type: "POST",
-                    data: JSON.stringify(data),
-                    processData: false,
-                    contentType: false,
-                    cache: false,
-                    success: ((response)=>{
-                        console.log(response);
-                    }),
-                    error:function(response){
-                        console.log(response); 
-                    }
-                });
-				*/
-
-				// create a square at this position
-				/*
-				var geometryPlane = new THREE.PlaneGeometry(planeSize, planeSize);
-				var materialPlane = new THREE.MeshBasicMaterial({ color: 0x48C9B0, side: THREE.DoubleSide });
-				var plane = new THREE.Mesh(geometryPlane, materialPlane);
-				*/
-				var geometryPlane = new THREE.BoxBufferGeometry( planeSize, planeSize, planeSize); 
-				var materialPlane = new THREE.MeshBasicMaterial( { color: 0x48C9B0, wireframe: true } ); 
-				var plane = new THREE.Mesh( geometryPlane, materialPlane );
-				
-				plane.position.x = intersects[0].point.x;
-				plane.position.y = intersects[0].point.y;
-				plane.position.z = realCentroid.z;
-				plane.name = 'plane';
-				scene.add(plane);
-
-				// search objects inside this plane
-				var xLow = plane.position.x - Math.floor(planeSize / 2);
-				var yLow = plane.position.y - Math.floor(planeSize / 2);
-				var zLow = plane.position.z - Math.floor(planeSize / 2);
-				var xHigh = plane.position.x + Math.floor(planeSize / 2);
-				var yHigh = plane.position.y + Math.floor(planeSize / 2);
-				var zHigh = plane.position.z + Math.floor(planeSize / 2);
-
-				var density = 0;
-				var totalVolume = 0;
-				var totalCompactness = 0;
-				var totalElongation = 0;
-				for (var i = 0; i < cells.length; i++){
-					if (cells[i].centroidX >= xLow && cells[i].centroidX <= xHigh &&
-						cells[i].centroidY >= yLow && cells[i].centroidY <= yHigh &&
-						cells[i].centroidZ >= zLow && cells[i].centroidZ <= zHigh
-						){
-							density ++;
-							totalVolume += parseFloat(cells[i].volume);
-							totalCompactness += parseFloat(cells[i].compactness);
-							totalElongation += parseFloat(cells[i].elongation);
-							//console.log(cells[i]);
-							var selectedCell = scene.getObjectByName(cells[i].id);
-							//console.log(selectedCell);
-							// save its color
-							//var pickedObjectSavedColor = selectedCell.material.emissive.getHex();
-							// set its emissive color to flashing red/yellow
-							//selectedCell.material.color.setHex(0xFF0000);
-						}
-				}
-				
-				// display selected coordinates
-				var coordinates = '(x: ' + realCentroid.x + ',' +
-									' y: ' + realCentroid.y + ',' +
-									' z: ' + realCentroid.z + ')';
-				var info = `Density: ${density} <br> 
-							Avg Volume: ${totalVolume / density} <br>
-							Avg Compactness: ${totalCompactness / density} <br>
-							Avg Elongation: ${totalElongation / density}`
-							;					
-				tooltip.innerHTML = info;
-				tooltip.style.visibility = 'visible';
-				tooltip.style.top = event.clientY + 'px';
-				tooltip.style.left = event.clientX + 20 + 'px';
-			}
-
-		}
-
-		function onWindowResize() {
-
-			camera.aspect = window.innerWidth / window.innerHeight;
-			camera.updateProjectionMatrix();
-
-			renderer.setSize(window.innerWidth, window.innerHeight);
-
-			controls.handleResize();
-
-		}
+		
 
 		function animate() {
 
@@ -352,8 +1077,13 @@
 			camera2.position.setLength(300);
 			camera2.lookAt(scene2.position);
 
-			renderer.render(scene, camera);
 			renderer2.render(scene2, camera2);
+			requestAnimationFrame( animate );
+
+            // required if controls.enableDamping or controls.autoRotate are set to true
+            orbit.update();
+
+            webGLRenderer.render( scene, camera );
 
 			stats.update();
 
@@ -384,6 +1114,37 @@
 			scene2.add(axes2);
 
 		}
+        // Render
+
+        var step = 0;
+
+        function render() {
+            
+
+           stats.update();
+           orbit.update();
+
+            requestAnimationFrame(render);
+            webGLRenderer.render(scene, camera);
+        }
+		function initStats() {
+
+            var stats = new Stats();
+            stats.setMode(0); // 0: fps, 1: ms
+
+            // Align top-left
+            stats.domElement.style.position = 'absolute';
+            stats.domElement.style.left = '0px';
+            stats.domElement.style.top = '0px';
+
+            document.getElementById("Stats-output").appendChild(stats.domElement);
+
+            return stats;
+        }        
+        
+        toolBar();
+       }
+       window.onload = init;
 
 	</script>
 
