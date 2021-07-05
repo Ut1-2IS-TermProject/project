@@ -405,8 +405,9 @@
 
             var intersects = raycaster.intersectObjects( scene.children, true );
             // console.log(scene.children[2]);
-           if (intersects.length>0 &&  intersects[0].object.name == 'Loader') {
+            if (intersects.length>0) {
                 var selected=intersects [0];// take the first object
+                console.log(intersects);
                 var x = selected.point.x;
                 var y = selected.point.y;
                 var z = selected.point.z;
@@ -414,22 +415,12 @@
                 // console.log ("x coordinate:" + selected.point.x);
                 // console.log ("y coordinate:" + selected.point.y);
                 // console.log ("z coordinate:" + selected.point.z);
-                
-              };
-              if(intersects.length>0 && intersects[0] && intersects[0].object.name == 'plane1') {
-                var selected=intersects [0];// take the first object
-                var x = selected.point.x;
-                var y = selected.point.y;
-                var z = selected.point.z -50 ;
-                
-                
-              };
-            // Display clicked points           
-            drawPoints(x,y,z);
+                drawPoints(x,y,z);
            
-            //Draw Polygon
-            dots.push( new THREE.Vector3(x,y,z));
-            drawPolyFence();
+	            //Draw Polygon
+	            dots.push( new THREE.Vector3(x,y,z));
+	            drawPolyFence();
+              }
         }
         if (event.button === 2) {
 
@@ -770,17 +761,32 @@
                 var zHigh = plane.position.z + Math.floor(planeSize / 2);
                
 					
-                // console.log(xLow,xHigh);
+                const mapType = new Map();
+                var typeList  =[];
+                var typeDen = 0;
                 var density = 0;
                 var avgVolume = 0;
                 var avgCompactness = 0;
                 var avgElongation = 0;
+                var temInfo = ""; 
                 for (var i = 0; i < cells.length; i++){
                     if (cells[i].centroidX >= xLow && cells[i].centroidX <= xHigh &&
                         cells[i].centroidY >= yLow && cells[i].centroidY <= yHigh //&&
                         // cells[i].centroidZ >= zLow && cells[i].centroidZ <= zHigh
                         ){
+                    		if( typeList.includes(cells[i].cellClass)){
+                    			
+                    			var d = mapType.get(cells[i].cellClass);
+                    			mapType.set(cells[i].cellClass,d+1);
+                    			console.log(mapType);
+
+                    		}else{
+                    			typeList.push(cells[i].cellClass);
+                    			typeDen = 1;
+                    			mapType.set(cells[i].cellClass, typeDen);
+                    		}
                     		
+
                             density ++;
                             avgVolume += Number(cells[i].volume);
                             // console.log(avgVolume);
@@ -800,11 +806,21 @@
                 avgCompactness = avgCompactness/density;
                 avgElongation = avgElongation/density;
                 
-                var info = `Density: ${density} <br> 
+
+                for (const entry of mapType.entries()) {
+                	var tem ;
+                	tem = entry+'<br>';
+				  console.log(entry);
+				  var temInfo = temInfo+'<br>'+entry;
+				  // console.log(temInfo);
+				}
+               
+                var info = `Cell: ${temInfo}<br>
+                Density: ${density} <br> 
                             Avg Volume: ${avgVolume} <br>
                             Avg Compactness: ${avgCompactness} <br>
                             Avg Elongation: ${avgElongation}`
-                            ;                   
+                            ;                      
                 tooltip.innerHTML = info;
                 tooltip.style.visibility = 'visible';
                 tooltip.style.top = event.clientY + 'px';
